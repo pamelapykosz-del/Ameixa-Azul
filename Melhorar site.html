@@ -1,875 +1,395 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="pt-BR" class="scroll-smooth">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Projeto educacional de um semáforo inteligente com Arduino Uno e sensor infravermelho.">
-  <title>Semáforo Inteligente com IR | Robótica Educacional</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ["Inter", "sans-serif"],
-            mono: ["JetBrains Mono", "monospace"]
-          },
-          colors: {
-            brand: {
-              400: "#4ade80",
-              500: "#22c55e",
-              600: "#16a34a",
-              700: "#15803d"
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semáforo Inteligente com Sensor IR - Robótica Educacional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        },
+                        tech: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
             }
-          }
         }
-      }
-    }
-  </script>
+    </script>
+    <style>
+        .glow-red { box-shadow: 0 0 25px rgba(239, 68, 68, 0.85); }
+        .glow-yellow { box-shadow: 0 0 25px rgba(234, 179, 8, 0.85); }
+        .glow-green { box-shadow: 0 0 25px rgba(34, 197, 94, 0.85); }
+        .glow-ir { box-shadow: 0 0 15px rgba(168, 85, 247, 0.7); }
+        .tab-active { border-bottom: 3px solid #22c55e; color: #22c55e; font-weight: 700; }
+    </style>
 
-  <style>
-    :root { color-scheme: dark; }
-    html { scroll-padding-top: 84px; }
-    body { background: #020617; }
-    ::selection { background: #22c55e; color: #022c22; }
+<!-- CSS adicional: códigos originais preservados -->
+<style>
 
-    .glass {
-      background: rgba(15, 23, 42, .72);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
+/* =========================================================
+   CSS DO SITE — adicionado sem alterar os códigos originais
+   ========================================================= */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#020617;color:#e2e8f0}
+a{transition:all .2s ease}
+button{font-family:inherit;cursor:pointer}
+img{max-width:100%;height:auto}
+::-webkit-scrollbar{width:10px}
+::-webkit-scrollbar-track{background:#020617}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:999px}
+::-webkit-scrollbar-thumb:hover{background:#475569}
+.card,.panel{transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.card:hover,.panel:hover{transform:translateY(-3px);box-shadow:0 18px 45px rgba(0,0,0,.25)}
+button:hover{filter:brightness(1.08)}
+button:active{transform:scale(.98)}
+pre{white-space:pre-wrap;overflow-x:auto}
+:focus-visible{outline:2px solid #38bdf8;outline-offset:3px}
+@media(max-width:900px){.container{max-width:100%!important}}
+@media(max-width:640px){
+ h1{font-size:clamp(2rem,10vw,3rem)!important}
+ h2{font-size:clamp(1.6rem,8vw,2.3rem)!important}
+ .container{padding-left:16px!important;padding-right:16px!important}
+ button{max-width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}
+ *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
 
-    .grid-bg {
-      background-image:
-        linear-gradient(rgba(34,197,94,.055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34,197,94,.055) 1px, transparent 1px);
-      background-size: 32px 32px;
-    }
-
-    .glow-red { box-shadow: 0 0 24px rgba(239,68,68,.85); }
-    .glow-yellow { box-shadow: 0 0 24px rgba(234,179,8,.85); }
-    .glow-green { box-shadow: 0 0 24px rgba(34,197,94,.85); }
-    .glow-purple { box-shadow: 0 0 18px rgba(168,85,247,.8); }
-
-    .card-hover {
-      transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
-    }
-    .card-hover:hover {
-      transform: translateY(-4px);
-      border-color: rgba(74,222,128,.35);
-      box-shadow: 0 18px 50px rgba(0,0,0,.25);
-    }
-
-    .traffic-light {
-      background: linear-gradient(145deg, #111827, #030712);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 18px 40px rgba(0,0,0,.35);
-    }
-
-    .road-lines {
-      background: repeating-linear-gradient(
-        90deg,
-        transparent 0 24px,
-        rgba(255,255,255,.22) 24px 46px
-      );
-    }
-
-    .pulse-soft { animation: pulseSoft 1.8s infinite; }
-    @keyframes pulseSoft {
-      0%,100% { opacity: 1; }
-      50% { opacity: .55; }
-    }
-
-    .car-drive { animation: drive 3.2s linear infinite; }
-    @keyframes drive {
-      from { transform: translateX(-20px); }
-      to { transform: translateX(calc(100% + 60px)); }
-    }
-
-    .ped-walk { animation: walk 1.1s ease-in-out infinite; }
-    @keyframes walk {
-      0%,100% { transform: translateY(0); }
-      50% { transform: translateY(-4px); }
-    }
-
-    .fade-up {
-      animation: fadeUp .7s ease both;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .nav-link.active {
-      color: #4ade80;
-      background: rgba(34,197,94,.09);
-    }
-
-    .code-line { counter-increment: line; }
-    .code-line::before {
-      content: counter(line);
-      display: inline-block;
-      width: 2.25rem;
-      margin-right: .75rem;
-      color: #475569;
-      text-align: right;
-      user-select: none;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-        scroll-behavior: auto !important;
-        transition-duration: .01ms !important;
-      }
-    }
-  </style>
+</style>
 </head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
-<body class="min-h-screen text-slate-100 font-sans antialiased">
-
-  <!-- NAVBAR -->
-  <header class="sticky top-0 z-50 border-b border-slate-800/80 glass">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="flex h-16 items-center justify-between gap-4">
-        <a href="#top" class="flex items-center gap-3 shrink-0" aria-label="Voltar ao início">
-          <div class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-brand-600 to-emerald-300 font-black text-slate-950 shadow-lg shadow-green-900/30">IR</div>
-          <div class="hidden sm:block">
-            <div class="text-[10px] font-bold uppercase tracking-[.2em] text-brand-400">Robótica • Aula 04</div>
-            <div class="font-bold leading-tight">Semáforo Inteligente</div>
-          </div>
-        </a>
-
-        <nav id="desktop-nav" class="hidden lg:flex items-center gap-1 text-sm">
-          <a class="nav-link rounded-lg px-3 py-2 text-slate-300 transition hover:text-white" href="#simulator">Simulador</a>
-          <a class="nav-link rounded-lg px-3 py-2 text-slate-300 transition hover:text-white" href="#materials">Materiais</a>
-          <a class="nav-link rounded-lg px-3 py-2 text-slate-300 transition hover:text-white" href="#assembly">Montagem</a>
-          <a class="nav-link rounded-lg px-3 py-2 text-slate-300 transition hover:text-white" href="#code">Código</a>
-          <a class="nav-link rounded-lg px-3 py-2 text-slate-300 transition hover:text-white" href="#troubleshooting">Ajuda</a>
-        </nav>
-
-        <div class="flex items-center gap-2">
-          <span class="hidden md:inline-flex rounded-full border border-emerald-800 bg-emerald-950/70 px-3 py-1 text-xs font-semibold text-emerald-400">SEED / DTI Paraná</span>
-          <button id="menu-btn" class="lg:hidden rounded-lg border border-slate-700 bg-slate-900 p-2 text-slate-300 hover:text-white" aria-label="Abrir menu" aria-expanded="false">
-            ☰
-          </button>
-        </div>
-      </div>
-
-      <div id="mobile-menu" class="hidden border-t border-slate-800 py-3 lg:hidden">
-        <div class="grid gap-1">
-          <a class="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800" href="#simulator">Simulador</a>
-          <a class="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800" href="#materials">Materiais</a>
-          <a class="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800" href="#assembly">Montagem</a>
-          <a class="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800" href="#code">Código C++</a>
-          <a class="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800" href="#troubleshooting">Solução de problemas</a>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main id="top">
-
-    <!-- HERO -->
-    <section class="relative overflow-hidden border-b border-slate-800">
-      <div class="absolute inset-0 grid-bg"></div>
-      <div class="absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-green-500/10 blur-3xl"></div>
-
-      <div class="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-12 lg:px-8">
-        <div class="fade-up lg:col-span-7">
-          <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-xs text-slate-300">
-            <span class="h-2 w-2 animate-pulse rounded-full bg-brand-500"></span>
-            Módulo 2 • Automação e Segurança no Trânsito
-          </div>
-
-          <h1 class="max-w-4xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            Semáforo inteligente com
-            <span class="bg-gradient-to-r from-brand-400 to-emerald-200 bg-clip-text text-transparent">sensor infravermelho</span>
-          </h1>
-
-          <p class="mt-6 max-w-2xl text-base leading-8 text-slate-400 sm:text-lg">
-            Um protótipo educacional com Arduino Uno e sensor IR capaz de detectar a aproximação de um pedestre e alterar a sinalização do trânsito.
-          </p>
-
-          <div class="mt-8 flex flex-wrap gap-3">
-            <a href="#simulator" class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-bold text-slate-950 shadow-xl shadow-green-900/30 transition hover:-translate-y-0.5 hover:bg-brand-500">
-              ▶ Testar simulador
-            </a>
-            <a href="#assembly" class="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 font-semibold text-white transition hover:border-slate-600 hover:bg-slate-800">
-              ⚙ Ver montagem
-            </a>
-          </div>
-
-          <div class="mt-9 grid max-w-xl grid-cols-3 gap-3">
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-              <div class="text-2xl font-extrabold text-white">01</div>
-              <div class="mt-1 text-xs text-slate-500">Arduino Uno</div>
-            </div>
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-              <div class="text-2xl font-extrabold text-white">01</div>
-              <div class="mt-1 text-xs text-slate-500">Sensor IR</div>
-            </div>
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-              <div class="text-2xl font-extrabold text-white">05</div>
-              <div class="mt-1 text-xs text-slate-500">LEDs</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- HERO STATUS -->
-        <div class="lg:col-span-5">
-          <div class="traffic-light relative mx-auto max-w-sm rounded-3xl border border-slate-700 p-6">
-            <div class="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-green-500/10 blur-3xl"></div>
-
-            <div class="relative flex items-center justify-between">
-              <div>
-                <div class="text-[10px] font-mono uppercase tracking-[.2em] text-slate-500">Status do sistema</div>
-                <div id="hero-state" class="mt-1 text-xl font-bold text-white">Modo carros</div>
-              </div>
-              <span id="hero-badge" class="rounded-full border border-emerald-800 bg-emerald-950 px-2.5 py-1 text-[10px] font-bold text-emerald-400">NORMAL</span>
-            </div>
-
-            <div class="relative mt-6 grid grid-cols-2 gap-4">
-              <div class="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-center">
-                <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Veículos</div>
-                <div class="traffic-light mx-auto w-fit space-y-3 rounded-2xl border border-slate-800 p-3">
-                  <div id="hero-car-red" class="h-9 w-9 rounded-full border border-red-900 bg-red-950"></div>
-                  <div id="hero-car-yellow" class="h-9 w-9 rounded-full border border-yellow-900 bg-yellow-950"></div>
-                  <div id="hero-car-green" class="glow-green h-9 w-9 rounded-full border border-green-300 bg-green-500"></div>
-                </div>
-              </div>
-
-              <div class="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-center">
-                <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Pedestres</div>
-                <div class="traffic-light mx-auto w-fit space-y-3 rounded-2xl border border-slate-800 p-3">
-                  <div id="hero-ped-red" class="glow-red h-9 w-9 rounded-full border border-red-300 bg-red-500"></div>
-                  <div id="hero-ped-green" class="h-9 w-9 rounded-full border border-green-900 bg-green-950"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="relative mt-5 space-y-2 rounded-2xl border border-slate-800 bg-slate-950 p-4 font-mono text-[10px]">
-              <div class="flex justify-between gap-4">
-                <span class="text-slate-500">Sensor IR</span>
-                <span id="hero-ir-status" class="text-emerald-400">LIVRE • D2 HIGH</span>
-              </div>
-              <div class="flex justify-between gap-4">
-                <span class="text-slate-500">Interrupção</span>
-                <span class="text-slate-300">FALLING</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SIMULATOR -->
-    <section id="simulator" class="border-b border-slate-800 bg-slate-900/70 py-16 md:py-20">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto mb-10 max-w-3xl text-center">
-          <div class="text-xs font-bold uppercase tracking-[.2em] text-brand-400">Protótipo virtual</div>
-          <h2 class="mt-2 text-3xl font-extrabold sm:text-4xl">Simulador de funcionamento</h2>
-          <p class="mt-3 leading-7 text-slate-400">Clique no sensor para simular a chegada de um pedestre. A sequência do semáforo muda automaticamente.</p>
-        </div>
-
-        <div class="grid gap-6 lg:grid-cols-5">
-          <div class="space-y-5 lg:col-span-2">
-            <div class="card-hover rounded-3xl border border-slate-800 bg-slate-950 p-5">
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Sensor de obstáculo IR</div>
-                  <p class="mt-2 text-sm leading-6 text-slate-400">No protótipo, a aproximação do pedestre representa uma mudança do sinal do sensor para LOW.</p>
-                </div>
-                <div id="sensor-led" class="mt-1 h-4 w-4 rounded-full bg-purple-950"></div>
-              </div>
-
-              <div class="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-4">
-                <div class="flex items-center gap-3">
-                  <div class="grid h-14 w-14 place-items-center rounded-xl border border-slate-700 bg-slate-950">
-                    <div class="space-y-1 text-center">
-                      <div id="sim-ir-emitter" class="mx-auto h-3 w-3 rounded-full border border-purple-500/50 bg-purple-950"></div>
-                      <div id="sim-ir-receiver" class="mx-auto h-3 w-3 rounded-full border border-slate-600 bg-black"></div>
-                      <span class="block text-[8px] font-mono text-slate-500">IR</span>
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+        <div class="max-w-7xl mx-mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-brand-500/20">
+                        IR
                     </div>
-                  </div>
-                  <div>
-                    <div class="text-sm font-bold">Módulo IR</div>
-                    <div id="sim-ir-label" class="mt-1 text-xs text-slate-500">Sem obstáculo</div>
-                  </div>
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-brand-500 block">Robótica • Aula 04</span>
+                        <h1 class="text-lg font-bold text-white leading-tight">Semáforo Inteligente com IR</h1>
+                    </div>
+                </div>
+                <nav class="hidden md:flex space-x-1 text-sm font-medium">
+                    <a href="#simulator" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">Simulador</a>
+                    <a href="#materials" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">Materiais</a>
+                    <a href="#assembly" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">Passo a Passo</a>
+                    <a href="#code" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">Código C++</a>
+                    <a href="#troubleshooting" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">Solução de Problemas</a>
+                </nav>
+                <div class="hidden sm:flex items-center space-x-2">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                        SEED / DTI Paraná
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 py-12 md:py-20 border-b border-slate-800">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#22c55e_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid md:grid-cols-12 gap-8 items-center">
+                <div class="md:col-span-7 space-y-6">
+                    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-300">
+                        <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+                        <span>Módulo 2 • Automação e Segurança no Trânsito</span>
+                    </div>
+                    <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+                        Aumentando a Segurança de Pedestres com <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-300">Infravermelho</span>
+                    </h2>
+                    <p class="text-base sm:text-lg text-slate-400 leading-relaxed">
+                        Aprenda a construir um protótipo de semáforo inteligente com Arduino Uno e Sensor de Obstáculo Infravermelho (IR). Ele detecta a presença de pedestres na calçada e interrompe o tráfego de veículos de forma rápida e segura através de interrupções por hardware.
+                    </p>
+                    <div class="flex flex-wrap gap-4 pt-2">
+                        <a href="#simulator" class="px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold transition shadow-lg shadow-brand-600/30 flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Testar Simulador Interativo</span>
+                        </a>
+                        <a href="#assembly" class="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium transition border border-slate-700 flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                            <span>Ver Passo a Passo</span>
+                        </a>
+                    </div>
                 </div>
 
-                <button id="btn-trigger-ir" class="rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-lg shadow-green-900/30 transition hover:bg-brand-500 active:scale-95">
-                  🚶 Simular
-                </button>
-              </div>
+                <div class="md:col-span-5 flex justify-center">
+                    <div class="relative w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl overflow-hidden">
+                        <div class="absolute -top-12 -right-12 w-40 h-40 bg-brand-500/10 rounded-full blur-3xl"></div>
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-xs font-mono text-slate-400">STATUS DO SISTEMA</span>
+                            <span id="hero-badge" class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">MODO CARROS</span>
+                        </div>
+                        
+                        <!-- Visual representation of semaphores -->
+                        <div class="grid grid-cols-2 gap-4 my-4">
+                            <!-- Car Semaphore -->
+                            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col items-center">
+                                <span class="text-xs font-bold text-slate-400 mb-2">VEÍCULOS</span>
+                                <div class="space-y-3 bg-slate-900 p-3 rounded-xl border border-slate-800">
+                                    <div id="hero-car-red" class="w-8 h-8 rounded-full bg-red-950 border border-red-900/50 transition-all duration-300"></div>
+                                    <div id="hero-car-yellow" class="w-8 h-8 rounded-full bg-yellow-950 border border-yellow-900/50 transition-all duration-300"></div>
+                                    <div id="hero-car-green" class="w-8 h-8 rounded-full bg-green-500 glow-green border border-green-300 transition-all duration-300"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Pedestrian Semaphore -->
+                            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col items-center">
+                                <span class="text-xs font-bold text-slate-400 mb-2">PEDESTRES</span>
+                                <div class="space-y-3 bg-slate-900 p-3 rounded-xl border border-slate-800">
+                                    <div id="hero-ped-red" class="w-8 h-8 rounded-full bg-red-500 glow-red border border-red-300 transition-all duration-300"></div>
+                                    <div id="hero-ped-green" class="w-8 h-8 rounded-full bg-green-950 border border-green-900/50 transition-all duration-300"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-400 space-y-1">
+                            <div class="flex justify-between">
+                                <span>Sensor IR:</span>
+                                <span id="hero-ir-status" class="font-mono text-emerald-400">LIVRE (Pino D2 HIGH)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Interrupção Hardware:</span>
+                                <span class="font-mono text-slate-300">FALLING</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Simulator Section -->
+    <section id="simulator" class="py-16 bg-slate-900 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <h2 class="text-xs font-bold text-brand-500 uppercase tracking-widest mb-2">Protótipo Virtual</h2>
+                <h3 class="text-3xl font-bold text-white">Simulador de Funcionamento do Semáforo IR</h3>
+                <p class="text-slate-400 mt-2">
+                    Aproxime o pedestre do sensor infravermelho para disparar a interrupção no Arduino e observe a sequência automática de transição das luzes.
+                </p>
             </div>
 
-            <div class="rounded-3xl border border-slate-800 bg-slate-950 p-5">
-              <div class="flex items-center justify-between">
+            <div class="bg-slate-950 border border-slate-800 rounded-3xl p-6 lg:p-8 shadow-2xl">
+                <div class="grid lg:grid-cols-12 gap-8 items-center">
+                    
+                    <!-- Left Column: Controls & Sensor -->
+                    <div class="lg:col-span-5 space-y-6">
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                            <h4 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center space-x-2">
+                                <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+                                <span>Simulação do Sensor de Obstáculo IR</span>
+                            </h4>
+                            <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                                O sensor possui um LED Emissor IR e um Fototransistor Receptor. Quando um pedestre se aproxima (distância entre 2 a 30 cm), o sinal IR é refletido para o receptor e o pino de SINAL altera para nível LÓGICO BAIXO (LOW), disparando o <code class="text-brand-400 font-mono bg-slate-950 px-1 py-0.5 rounded">attachInterrupt()</code>.
+                            </p>
+
+                            <!-- Sensor Visual Unit -->
+                            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-16 bg-slate-900 border border-slate-700 rounded-lg flex flex-col items-center justify-center space-y-1 relative">
+                                        <div id="sim-ir-emitter" class="w-3 h-3 rounded-full bg-purple-950 border border-purple-500/50"></div>
+                                        <div id="sim-ir-receiver" class="w-3 h-3 rounded-full bg-black border border-slate-600"></div>
+                                        <span class="text-[9px] font-mono text-slate-500">IR SENSOR</span>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-bold text-white">Módulo Sensor IR</div>
+                                        <div id="sim-ir-label" class="text-xs text-slate-400 font-mono">Status: Sem Obstáculo</div>
+                                    </div>
+                                </div>
+
+                                <button id="btn-trigger-ir" onclick="triggerPedestrian()" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 active:scale-95 text-slate-950 font-bold text-xs transition shadow-lg shadow-brand-600/30 flex items-center space-x-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    <span>Simular Pedestre (IR)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Audio Challenge toggle -->
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs font-bold text-white">Desafio: SinalSonoro (Buzzer)</div>
+                                <div class="text-xs text-slate-400">Ativar beeps para travessia de pedestres</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-audio" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Real-time Terminal Log -->
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs">
+                            <div class="flex justify-between text-slate-500 mb-2 border-b border-slate-800 pb-1">
+                                <span>MONITOR SERIAL (ARDUINO IDE)</span>
+                                <span class="text-[10px]">9600 BAUD</span>
+                            </div>
+                            <div id="sim-log" class="h-28 overflow-y-auto space-y-1 text-slate-300 text-[11px]">
+                                <div>[SISTEMA] Inicializado. Modo = 0 (Carros Abertos).</div>
+                                <div>[INTERRUPÇÃO] Aguardando sinal FALLING no Pino D2...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Interactive Graphic Traffic Street Simulation -->
+                    <div class="lg:col-span-7">
+                        <div class="relative bg-slate-900 rounded-2xl border border-slate-800 p-6 overflow-hidden">
+                            <!-- Visual street header -->
+                            <div class="flex justify-between items-center mb-6">
+                                <span class="text-xs font-bold text-slate-400">VIA PÚBLICA SECUNDÁRIA COM FAIXA DE PEDESTRES</span>
+                                <div id="sim-status-pill" class="px-3 py-1 rounded-full text-xs font-bold bg-green-950 text-green-400 border border-green-800">
+                                    TRÂNSITO LIVRE
+                                </div>
+                            </div>
+
+                            <!-- Interactive Road Scene -->
+                            <div class="relative bg-slate-950 rounded-xl p-6 border border-slate-800 overflow-hidden min-h-[260px] flex flex-col justify-between">
+                                <!-- Top Car Lane -->
+                                <div class="relative h-20 bg-slate-900/90 rounded-lg border-y-2 border-dashed border-slate-700 flex items-center justify-between px-4 overflow-hidden">
+                                    <div class="text-[10px] font-mono text-slate-600 uppercase">Via de Veículos</div>
+                                    <!-- Animated Car -->
+                                    <div id="sim-car" class="absolute left-4 top-3 transition-all duration-700 transform flex items-center space-x-1">
+                                        <div class="bg-blue-600 text-white text-[10px] px-2 py-1 rounded-md font-bold shadow-md flex items-center space-x-1">
+                                            <span>🚗</span>
+                                            <span class="hidden sm:inline">Veículo</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Pedestrian Crossing Stripes -->
+                                <div class="my-2 flex justify-center space-x-2 py-1 bg-slate-900/40 rounded">
+                                    <div class="w-8 h-8 bg-slate-200/20 rounded-sm"></div>
+                                    <div class="w-8 h-8 bg-slate-200/20 rounded-sm"></div>
+                                    <div class="w-8 h-8 bg-slate-200/20 rounded-sm"></div>
+                                    <div class="w-8 h-8 bg-slate-200/20 rounded-sm"></div>
+                                    <div class="w-8 h-8 bg-slate-200/20 rounded-sm"></div>
+                                </div>
+
+                                <!-- Pedestrian Footpath -->
+                                <div class="h-16 bg-emerald-950/20 rounded-lg border border-emerald-900/30 flex items-center justify-between px-4">
+                                    <div class="text-[10px] font-mono text-slate-500 uppercase">Calçada de Pedestres</div>
+                                    <!-- Pedestrian Figure -->
+                                    <div id="sim-pedestrian" class="transition-all duration-500 flex items-center space-x-2">
+                                        <div class="bg-amber-500 text-slate-950 text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center space-x-1">
+                                            <span>🚶</span>
+                                            <span>Pedestre</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Semaphores overlay UI -->
+                                <div class="absolute right-6 top-6 flex space-x-4">
+                                    <!-- Vehicles Semaphore Tower -->
+                                    <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-700 shadow-xl flex flex-col items-center space-y-2">
+                                        <span class="text-[9px] font-bold text-slate-400">CARROS</span>
+                                        <div id="main-car-red" class="w-6 h-6 rounded-full bg-red-950 border border-red-900"></div>
+                                        <div id="main-car-yellow" class="w-6 h-6 rounded-full bg-yellow-950 border border-yellow-900"></div>
+                                        <div id="main-car-green" class="w-6 h-6 rounded-full bg-green-500 glow-green border border-green-300"></div>
+                                    </div>
+
+                                    <!-- Pedestrians Semaphore Tower -->
+                                    <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-700 shadow-xl flex flex-col items-center space-y-2">
+                                        <span class="text-[9px] font-bold text-slate-400">PEDESTRES</span>
+                                        <div id="main-ped-red" class="w-6 h-6 rounded-full bg-red-500 glow-red border border-red-300"></div>
+                                        <div id="main-ped-green" class="w-6 h-6 rounded-full bg-green-950 border border-green-900"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Materials Section -->
+    <section id="materials" class="py-16 bg-slate-950 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
                 <div>
-                  <div class="text-sm font-bold">Buzzer / sinal sonoro</div>
-                  <div class="mt-1 text-xs text-slate-500">Ative os beeps durante a travessia.</div>
+                    <h2 class="text-xs font-bold text-brand-500 uppercase tracking-widest mb-2">Inventário do Kit</h2>
+                    <h3 class="text-3xl font-bold text-white">Lista de Materiais Necessários</h3>
                 </div>
-                <label class="relative inline-flex cursor-pointer items-center">
-                  <input id="toggle-audio" type="checkbox" class="peer sr-only">
-                  <span class="h-6 w-11 rounded-full bg-slate-700 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-brand-500 peer-checked:after:translate-x-full"></span>
-                </label>
-              </div>
+                <p class="text-slate-400 max-w-md text-sm mt-2 md:mt-0">
+                    Todos os componentes eletrônicos presentes nesta montagem pertencem ao Kit de Robótica Educacional (Módulo 2).
+                </p>
             </div>
 
-            <div class="rounded-3xl border border-slate-800 bg-black p-4">
-              <div class="mb-3 flex items-center justify-between border-b border-slate-800 pb-2 font-mono text-[10px]">
-                <span class="text-slate-400">MONITOR SERIAL</span>
-                <span class="text-slate-600">9600 BAUD</span>
-              </div>
-              <div id="sim-log" class="h-32 space-y-1 overflow-y-auto font-mono text-[10px] leading-5 text-slate-400" aria-live="polite">
-                <div>[SISTEMA] Inicializado. Modo = 0.</div>
-                <div>[INTERRUPÇÃO] Aguardando FALLING no D2...</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="lg:col-span-3">
-            <div class="h-full rounded-3xl border border-slate-800 bg-slate-950 p-5 sm:p-6">
-              <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-                <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Via pública • faixa de pedestres</div>
-                <div id="sim-status-pill" class="rounded-full border border-emerald-800 bg-emerald-950 px-3 py-1 text-xs font-bold text-emerald-400">TRÂNSITO LIVRE</div>
-              </div>
-
-              <div class="relative min-h-[340px] overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-5">
-                <div class="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
-
-                <div class="relative mt-8 h-24 overflow-hidden rounded-xl border-y-2 border-dashed border-slate-700 bg-slate-950">
-                  <div class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-800"></div>
-                  <span class="absolute left-4 top-3 text-[9px] font-mono uppercase text-slate-600">Via de veículos</span>
-                  <div id="sim-car" class="absolute left-4 top-10 rounded-lg bg-blue-600 px-2.5 py-1 text-[10px] font-bold text-white shadow-lg">
-                    🚗 Veículo
-                  </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Arduino Uno -->
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 hover:border-slate-700 transition">
+                    <div class="w-12 h-12 rounded-xl bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 font-bold mb-4">
+                        UNO
+                    </div>
+                    <span class="text-xs font-mono text-cyan-400 block mb-1">QTD: 01</span>
+                    <h4 class="text-lg font-bold text-white mb-2">Arduino Uno R3 + Cabo USB</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Placa microcontroladora responsável por processar os sinais do sensor e controlar a lógica das portas digitais.
+                    </p>
                 </div>
 
-                <div class="my-3 flex justify-center gap-2 rounded-xl bg-slate-950/60 py-2">
-                  <span class="h-9 w-12 rounded bg-white/20"></span>
-                  <span class="h-9 w-12 rounded bg-white/20"></span>
-                  <span class="h-9 w-12 rounded bg-white/20"></span>
-                  <span class="h-9 w-12 rounded bg-white/20"></span>
-                  <span class="h-9 w-12 rounded bg-white/20"></span>
+                <!-- Protoboard -->
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 hover:border-slate-700 transition">
+                    <div class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold mb-4">
+                        400
+                    </div>
+                    <span class="text-xs font-mono text-slate-400 block mb-1">QTD: 01</span>
+                    <h4 class="text-lg font-bold text-white mb-2">Placa Protoboard</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Matriz de contatos para prototipagem rápida e sem solda dos componentes e barramento elétrico.
+                    </p>
                 </div>
 
-                <div class="relative h-20 rounded-xl border border-emerald-900/40 bg-emerald-950/20">
-                  <span class="absolute left-4 top-3 text-[9px] font-mono uppercase text-slate-600">Calçada</span>
-                  <div id="sim-pedestrian" class="ped-walk absolute right-8 top-9 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-bold text-slate-950">
-                    🚶 Pedestre
-                  </div>
+                <!-- Sensor IR -->
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 hover:border-slate-700 transition">
+                    <div class="w-12 h-12 rounded-xl bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 font-bold mb-4">
+                        IR
+                    </div>
+                    <span class="text-xs font-mono text-purple-400 block mb-1">QTD: 01</span>
+                    <h4 class="text-lg font-bold text-white mb-2">Sensor de Obstáculo IR</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Sensor infravermelho composto por LED emissor e fotorreceptor com alcance ajustável de 2cm a 30cm.
+                    </p>
                 </div>
 
-                <div class="absolute right-4 top-4 flex gap-3">
-                  <div class="traffic-light rounded-2xl border border-slate-700 p-2.5">
-                    <div class="mb-2 text-center text-[8px] font-bold text-slate-500">CARROS</div>
-                    <div id="main-car-red" class="mx-auto mb-2 h-6 w-6 rounded-full border border-red-900 bg-red-950"></div>
-                    <div id="main-car-yellow" class="mx-auto mb-2 h-6 w-6 rounded-full border border-yellow-900 bg-yellow-950"></div>
-                    <div id="main-car-green" class="glow-green mx-auto h-6 w-6 rounded-full border border-green-300 bg-green-500"></div>
-                  </div>
-                  <div class="traffic-light rounded-2xl border border-slate-700 p-2.5">
-                    <div class="mb-2 text-center text-[8px] font-bold text-slate-500">PEDESTRES</div>
-                    <div id="main-ped-red" class="glow-red mx-auto mb-2 h-6 w-6 rounded-full border border-red-300 bg-red-500"></div>
-                    <div id="main-ped-green" class="mx-auto h-6 w-6 rounded-full border border-green-900 bg-green-950"></div>
-                  </div>
+                <!-- LEDs Set -->
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 hover:border-slate-700 transition">
+                    <div class="w-12 h-12 rounded-xl bg-amber-950 border border-amber-800 flex items-center justify-center text-amber-400 font-bold mb-4">
+                        LED
+                    </div>
+                    <span class="text-xs font-mono text-amber-400 block mb-1">QTD: 05</span>
+                    <h4 class="text-lg font-bold text-white mb-2">LEDs 5mm</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        2x Vermelho (Carro/Pedestre), 2x Verde (Carro/Pedestre) e 1x Amarelo (Carro) para sinalização visual.
+                    </p>
                 </div>
 
-                <div class="absolute bottom-4 left-5 right-5 flex items-center justify-between text-[9px] font-mono text-slate-600">
-                  <span>IR → D2</span>
-                  <span>ARDUINO UNO</span>
-                  <span>LEDs → SAÍDAS</span>
-                </div>
-              </div>
-
-              <div class="mt-5 grid grid-cols-3 gap-3 text-center">
-                <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
-                  <div id="phase-label" class="text-sm font-bold">CARROS</div>
-                  <div class="mt-1 text-[10px] text-slate-500">Fase atual</div>
-                </div>
-                <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
-                  <div id="countdown" class="font-mono text-sm font-bold text-brand-400">—</div>
-                  <div class="mt-1 text-[10px] text-slate-500">Próxima fase</div>
-                </div>
-                <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
-                  <div id="sensor-value" class="font-mono text-sm font-bold">HIGH</div>
-                  <div class="mt-1 text-[10px] text-slate-500">D2 / sensor</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- MATERIALS -->
-    <section id="materials" class="border-b border-slate-800 py-16 md:py-20">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mb-10 max-w-2xl">
-          <div class="text-xs font-bold uppercase tracking-[.2em] text-brand-400">Inventário do kit</div>
-          <h2 class="mt-2 text-3xl font-extrabold sm:text-4xl">Materiais necessários</h2>
-          <p class="mt-3 leading-7 text-slate-400">Componentes usados no protótipo de semáforo inteligente.</p>
-        </div>
-
-        <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-900 p-5">
-            <div class="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-cyan-800 bg-cyan-950 font-bold text-cyan-400">UNO</div>
-            <div class="text-[10px] font-mono text-cyan-400">QTD. 01</div>
-            <h3 class="mt-2 font-bold">Arduino Uno R3 + USB</h3>
-            <p class="mt-2 text-xs leading-6 text-slate-500">Controla os sinais do sensor e as saídas digitais do projeto.</p>
-          </article>
-
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-900 p-5">
-            <div class="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-slate-700 bg-slate-800 font-bold text-slate-300">400</div>
-            <div class="text-[10px] font-mono text-slate-400">QTD. 01</div>
-            <h3 class="mt-2 font-bold">Protoboard</h3>
-            <p class="mt-2 text-xs leading-6 text-slate-500">Permite montar e testar o circuito sem solda.</p>
-          </article>
-
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-900 p-5">
-            <div class="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-purple-800 bg-purple-950 font-bold text-purple-400">IR</div>
-            <div class="text-[10px] font-mono text-purple-400">QTD. 01</div>
-            <h3 class="mt-2 font-bold">Sensor de obstáculo IR</h3>
-            <p class="mt-2 text-xs leading-6 text-slate-500">Detecta obstáculos pela reflexão da luz infravermelha.</p>
-          </article>
-
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-900 p-5">
-            <div class="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-amber-800 bg-amber-950 font-bold text-amber-400">LED</div>
-            <div class="text-[10px] font-mono text-amber-400">QTD. 05</div>
-            <h3 class="mt-2 font-bold">LEDs 5 mm</h3>
-            <p class="mt-2 text-xs leading-6 text-slate-500">2 vermelhos, 2 verdes e 1 amarelo para sinalização.</p>
-          </article>
-
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-900 p-5">
-            <div class="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-rose-800 bg-rose-950 font-bold text-rose-400">Ω</div>
-            <div class="text-[10px] font-mono text-rose-400">QTD. 05+</div>
-            <h3 class="mt-2 font-bold">Resistores</h3>
-            <p class="mt-2 text-xs leading-6 text-slate-500">Limitam a corrente dos LEDs e protegem os componentes.</p>
-          </article>
-
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-900 p-5">
-            <div class="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-blue-800 bg-blue-950 font-bold text-blue-400">JMP</div>
-            <div class="text-[10px] font-mono text-blue-400">QTD. VÁRIOS</div>
-            <h3 class="mt-2 font-bold">Jumpers</h3>
-            <p class="mt-2 text-xs leading-6 text-slate-500">Fazem as conexões entre Arduino, protoboard e sensor.</p>
-          </article>
-
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-900 p-5">
-            <div class="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-yellow-800 bg-yellow-950 font-bold text-yellow-400">🔊</div>
-            <div class="text-[10px] font-mono text-yellow-400">OPCIONAL</div>
-            <h3 class="mt-2 font-bold">Buzzer</h3>
-            <p class="mt-2 text-xs leading-6 text-slate-500">Pode emitir sinais sonoros durante a travessia.</p>
-          </article>
-
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-900 p-5">
-            <div class="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-emerald-800 bg-emerald-950 font-bold text-emerald-400">5V</div>
-            <div class="text-[10px] font-mono text-emerald-400">ALIMENTAÇÃO</div>
-            <h3 class="mt-2 font-bold">Fonte USB</h3>
-            <p class="mt-2 text-xs leading-6 text-slate-500">Alimenta o Arduino durante os testes do protótipo.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- ASSEMBLY -->
-    <section id="assembly" class="border-b border-slate-800 bg-slate-900/60 py-16 md:py-20">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mb-10 max-w-2xl">
-          <div class="text-xs font-bold uppercase tracking-[.2em] text-brand-400">Montagem</div>
-          <h2 class="mt-2 text-3xl font-extrabold sm:text-4xl">Passo a passo</h2>
-          <p class="mt-3 leading-7 text-slate-400">Organize o circuito por etapas para facilitar os testes.</p>
-        </div>
-
-        <div class="grid gap-5 md:grid-cols-2">
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-950 p-6">
-            <div class="flex gap-4">
-              <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-600 font-black text-slate-950">01</div>
-              <div>
-                <h3 class="font-bold">Monte a alimentação</h3>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Conecte os trilhos da protoboard ao 5V e GND do Arduino.</p>
-              </div>
-            </div>
-          </article>
-
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-950 p-6">
-            <div class="flex gap-4">
-              <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-600 font-black text-slate-950">02</div>
-              <div>
-                <h3 class="font-bold">Ligue os LEDs</h3>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Use resistores em série e identifique cada saída do semáforo.</p>
-              </div>
-            </div>
-          </article>
-
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-950 p-6">
-            <div class="flex gap-4">
-              <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-600 font-black text-slate-950">03</div>
-              <div>
-                <h3 class="font-bold">Conecte o sensor IR</h3>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Ligue VCC, GND e SINAL. Neste projeto, o sinal é monitorado pelo pino D2.</p>
-              </div>
-            </div>
-          </article>
-
-          <article class="card-hover rounded-3xl border border-slate-800 bg-slate-950 p-6">
-            <div class="flex gap-4">
-              <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-600 font-black text-slate-950">04</div>
-              <div>
-                <h3 class="font-bold">Carregue e teste</h3>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Envie o código para o Arduino e aproxime um objeto do sensor para testar a mudança de fase.</p>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <div class="mt-7 rounded-3xl border border-amber-900/50 bg-amber-950/20 p-5 text-sm text-amber-200">
-          <strong>⚠ Dica:</strong> antes de energizar o circuito, confira polaridade dos LEDs, resistores e conexões de 5V/GND.
-        </div>
-      </div>
-    </section>
-
-    <!-- CODE -->
-    <section id="code" class="border-b border-slate-800 py-16 md:py-20">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <div class="text-xs font-bold uppercase tracking-[.2em] text-brand-400">Programação</div>
-            <h2 class="mt-2 text-3xl font-extrabold sm:text-4xl">Código C++ / Arduino</h2>
-          </div>
-          <button id="copy-code" class="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold hover:bg-slate-800">⧉ Copiar código</button>
-        </div>
-
-        <div class="overflow-hidden rounded-3xl border border-slate-800 bg-black shadow-2xl">
-          <div class="flex items-center gap-2 border-b border-slate-800 bg-slate-950 px-4 py-3">
-            <span class="h-3 w-3 rounded-full bg-red-500"></span>
-            <span class="h-3 w-3 rounded-full bg-yellow-500"></span>
-            <span class="h-3 w-3 rounded-full bg-green-500"></span>
-            <span class="ml-2 text-xs font-mono text-slate-500">semaforo_ir.ino</span>
-          </div>
-          <pre id="code-content" class="overflow-x-auto p-5 text-xs leading-6 text-slate-300"><code>const byte SENSOR_IR = 2;
-const byte CARRO_VERDE = 8;
-const byte CARRO_AMARELO = 9;
-const byte CARRO_VERMELHO = 10;
-const byte PED_VERDE = 11;
-const byte PED_VERMELHO = 12;
-
-volatile bool pedidoTravessia = false;
-
-void pedido() {
-  pedidoTravessia = true;
-}
-
-void setup() {
-  pinMode(SENSOR_IR, INPUT);
-  pinMode(CARRO_VERDE, OUTPUT);
-  pinMode(CARRO_AMARELO, OUTPUT);
-  pinMode(CARRO_VERMELHO, OUTPUT);
-  pinMode(PED_VERDE, OUTPUT);
-  pinMode(PED_VERMELHO, OUTPUT);
-
-  attachInterrupt(digitalPinToInterrupt(SENSOR_IR), pedido, FALLING);
-}
-
-void loop() {
-  // Estado normal: carros liberados e pedestres parados.
-  digitalWrite(CARRO_VERDE, HIGH);
-  digitalWrite(PED_VERMELHO, HIGH);
-
-  if (pedidoTravessia) {
-    pedidoTravessia = false;
-
-    digitalWrite(CARRO_VERDE, LOW);
-    digitalWrite(CARRO_AMARELO, HIGH);
-    delay(1000);
-
-    digitalWrite(CARRO_AMARELO, LOW);
-    digitalWrite(CARRO_VERMELHO, HIGH);
-    digitalWrite(PED_VERMELHO, LOW);
-    digitalWrite(PED_VERDE, HIGH);
-    delay(4000);
-
-    digitalWrite(PED_VERDE, LOW);
-    digitalWrite(PED_VERMELHO, HIGH);
-    digitalWrite(CARRO_VERMELHO, LOW);
-  }
-}</code></pre>
-        </div>
-      </div>
-    </section>
-
-    <!-- TROUBLESHOOTING -->
-    <section id="troubleshooting" class="border-b border-slate-800 bg-slate-900/60 py-16 md:py-20">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mb-10">
-          <div class="text-xs font-bold uppercase tracking-[.2em] text-brand-400">Diagnóstico</div>
-          <h2 class="mt-2 text-3xl font-extrabold sm:text-4xl">Solução de problemas</h2>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <details class="group rounded-2xl border border-slate-800 bg-slate-950 p-5">
-            <summary class="cursor-pointer list-none font-bold">O sensor não detecta o objeto <span class="float-right text-brand-400">+</span></summary>
-            <p class="mt-3 text-sm leading-6 text-slate-500">Confira VCC/GND, o fio de SINAL e ajuste o potenciômetro de sensibilidade do módulo IR.</p>
-          </details>
-
-          <details class="group rounded-2xl border border-slate-800 bg-slate-950 p-5">
-            <summary class="cursor-pointer list-none font-bold">O LED não acende <span class="float-right text-brand-400">+</span></summary>
-            <p class="mt-3 text-sm leading-6 text-slate-500">Verifique a polaridade do LED, o resistor em série e se o pino configurado no código corresponde ao fio.</p>
-          </details>
-
-          <details class="group rounded-2xl border border-slate-800 bg-slate-950 p-5">
-            <summary class="cursor-pointer list-none font-bold">A interrupção não dispara <span class="float-right text-brand-400">+</span></summary>
-            <p class="mt-3 text-sm leading-6 text-slate-500">No Arduino Uno, confirme que o sinal está no D2 e que o modo FALLING foi configurado.</p>
-          </details>
-
-          <details class="group rounded-2xl border border-slate-800 bg-slate-950 p-5">
-            <summary class="cursor-pointer list-none font-bold">O semáforo fica travado <span class="float-right text-brand-400">+</span></summary>
-            <p class="mt-3 text-sm leading-6 text-slate-500">Revise as conexões e observe o Monitor Serial para identificar em qual etapa o programa parou.</p>
-          </details>
-        </div>
-      </div>
-    </section>
-
-    <!-- FINAL CTA -->
-    <section class="relative overflow-hidden py-16">
-      <div class="absolute inset-0 bg-gradient-to-br from-green-950/40 via-slate-950 to-slate-950"></div>
-      <div class="relative mx-auto max-w-4xl px-4 text-center sm:px-6">
-        <div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-600 text-2xl text-slate-950">✓</div>
-        <h2 class="mt-5 text-3xl font-extrabold">Pronto para testar?</h2>
-        <p class="mx-auto mt-3 max-w-2xl text-slate-400">Experimente o simulador, confira a montagem e depois leve o projeto para o Arduino.</p>
-        <a href="#simulator" class="mt-7 inline-flex rounded-xl bg-brand-600 px-6 py-3 font-bold text-slate-950 shadow-xl shadow-green-900/30 hover:bg-brand-500">Voltar ao simulador ↑</a>
-      </div>
-    </section>
-  </main>
-
-  <footer class="border-t border-slate-800 bg-slate-950">
-    <div class="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-7 text-xs text-slate-500 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-      <div>© 2026 • Projeto de Robótica Educacional</div>
-      <div>Semáforo Inteligente com Sensor IR</div>
-    </div>
-  </footer>
-
-  <script>
-    const $ = (id) => document.getElementById(id);
-
-    const states = {
-      normal: {
-        hero: "Modo carros",
-        badge: "NORMAL",
-        status: "TRÂNSITO LIVRE",
-        phase: "CARROS",
-        sensor: "HIGH",
-        heroSensor: "LIVRE • D2 HIGH",
-        irLabel: "Sem obstáculo",
-        car: ["off","off","green"],
-        ped: ["red","off"],
-        duration: 0
-      },
-      yellow: {
-        hero: "Preparando travessia",
-        badge: "ATENÇÃO",
-        status: "REDUZA A VELOCIDADE",
-        phase: "AMARELO",
-        sensor: "LOW",
-        heroSensor: "OBSTÁCULO • D2 LOW",
-        irLabel: "Obstáculo detectado",
-        car: ["off","yellow","off"],
-        ped: ["red","off"],
-        duration: 1
-      },
-      crossing: {
-        hero: "Travessia de pedestres",
-        badge: "TRAVESSIA",
-        status: "PEDESTRE LIBERADO",
-        phase: "PEDESTRES",
-        sensor: "LOW",
-        heroSensor: "TRAVESSIA • D2 LOW",
-        irLabel: "Pedestre detectado",
-        car: ["red","off","off"],
-        ped: ["off","green"],
-        duration: 4
-      }
-    };
-
-    let phase = "normal";
-    let busy = false;
-    let timer = null;
-
-    function setLight(el, color) {
-      const base = {
-        red: ["bg-red-500","border-red-300","glow-red"],
-        yellow: ["bg-yellow-400","border-yellow-200","glow-yellow"],
-        green: ["bg-green-500","border-green-300","glow-green"]
-      };
-
-      el.className = "h-" + (el.id.includes("hero") ? "9" : "6") + " w-" + (el.id.includes("hero") ? "9" : "6") + " rounded-full border transition-all duration-300";
-
-      if (!color || color === "off") {
-        el.classList.add(
-          color === "red" ? "bg-red-950" :
-          color === "yellow" ? "bg-yellow-950" : "bg-green-950",
-          color === "red" ? "border-red-900" :
-          color === "yellow" ? "border-yellow-900" : "border-green-900"
-        );
-        return;
-      }
-
-      base[color].forEach(c => el.classList.add(c));
-    }
-
-    function applyState(name) {
-      const s = states[name];
-      phase = name;
-
-      [["hero-car-red",s.car[0]],["hero-car-yellow",s.car[1]],["hero-car-green",s.car[2]],
-       ["hero-ped-red",s.ped[0]],["hero-ped-green",s.ped[1]],
-       ["main-car-red",s.car[0]],["main-car-yellow",s.car[1]],["main-car-green",s.car[2]],
-       ["main-ped-red",s.ped[0]],["main-ped-green",s.ped[1]]]
-       .forEach(([id,color]) => setLight($(id), color));
-
-      $("hero-state").textContent = s.hero;
-      $("hero-badge").textContent = s.badge;
-      $("sim-status-pill").textContent = s.status;
-      $("phase-label").textContent = s.phase;
-      $("sensor-value").textContent = s.sensor;
-      $("hero-ir-status").textContent = s.heroSensor;
-      $("sim-ir-label").textContent = s.irLabel;
-
-      $("sensor-led").className = "mt-1 h-4 w-4 rounded-full transition-all " +
-        (name === "normal" ? "bg-purple-950" : "bg-purple-400 glow-purple");
-
-      $("sim-ir-emitter").className = "mx-auto h-3 w-3 rounded-full border transition-all " +
-        (name === "normal" ? "border-purple-500/50 bg-purple-950" : "border-purple-200 bg-purple-400 glow-purple");
-
-      $("sim-ir-receiver").className = "mx-auto h-3 w-3 rounded-full border transition-all " +
-        (name === "normal" ? "border-slate-600 bg-black" : "border-purple-300 bg-purple-700");
-
-      $("countdown").textContent = s.duration ? s.duration + "s" : "—";
-    }
-
-    function log(message) {
-      const row = document.createElement("div");
-      row.textContent = message;
-      $("sim-log").appendChild(row);
-      $("sim-log").scrollTop = $("sim-log").scrollHeight;
-    }
-
-    function beep() {
-      if (!$("toggle-audio").checked) return;
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.frequency.value = 880;
-        gain.gain.value = 0.035;
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.08);
-      } catch (_) {}
-    }
-
-    function animateScene(crossing) {
-      const car = $("sim-car");
-      const ped = $("sim-pedestrian");
-      car.classList.remove("car-drive");
-      ped.classList.remove("ped-walk");
-
-      if (!crossing) {
-        void car.offsetWidth;
-        car.classList.add("car-drive");
-        ped.classList.add("ped-walk");
-      }
-    }
-
-    async function triggerPedestrian() {
-      if (busy) return;
-      busy = true;
-
-      $("btn-trigger-ir").disabled = true;
-      $("btn-trigger-ir").classList.add("opacity-50","cursor-not-allowed");
-
-      log("[IR] Obstáculo detectado → D2 LOW");
-      applyState("yellow");
-      animateScene(false);
-      beep();
-
-      await new Promise(r => setTimeout(r, 1100));
-
-      log("[SEMÁFORO] Carros = VERMELHO");
-      log("[SEMÁFORO] Pedestres = VERDE");
-      applyState("crossing");
-      animateScene(true);
-      beep();
-
-      let remaining = 4;
-      $("countdown").textContent = remaining + "s";
-      timer = setInterval(() => {
-        remaining--;
-        $("countdown").textContent = remaining > 0 ? remaining + "s" : "finalizando";
-        if (remaining <= 0) {
-          clearInterval(timer);
-          timer = null;
-        }
-      }, 1000);
-
-      await new Promise(r => setTimeout(r, 4200));
-
-      log("[SEMÁFORO] Travessia encerrada.");
-      applyState("normal");
-      animateScene(false);
-      log("[SISTEMA] Modo = 0. Aguardando novo sinal...");
-      $("btn-trigger-ir").disabled = false;
-      $("btn-trigger-ir").classList.remove("opacity-50","cursor-not-allowed");
-      busy = false;
-    }
-
-    $("btn-trigger-ir").addEventListener("click", triggerPedestrian);
-
-    $("copy-code").addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText($("code-content").innerText);
-        $("copy-code").textContent = "✓ Código copiado";
-        setTimeout(() => $("copy-code").textContent = "⧉ Copiar código", 1800);
-      } catch (_) {
-        $("copy-code").textContent = "Selecione o código para copiar";
-        setTimeout(() => $("copy-code").textContent = "⧉ Copiar código", 1800);
-      }
-    });
-
-    $("menu-btn").addEventListener("click", () => {
-      const menu = $("mobile-menu");
-      const open = !menu.classList.contains("hidden");
-      menu.classList.toggle("hidden");
-      $("menu-btn").setAttribute("aria-expanded", String(!open));
-    });
-
-    document.querySelectorAll("#mobile-menu a").forEach(a => {
-      a.addEventListener("click", () => $("mobile-menu").classList.add("hidden"));
-    });
-
-    // Highlight the current navigation section.
-    const sections = [...document.querySelectorAll("main section[id]")];
-    const navLinks = [...document.querySelectorAll(".nav-link")];
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          navLinks.forEach(link => link.classList.toggle("active", link.getAttribute("href") === "#" + entry.target.id));
-        }
-      });
-    }, { rootMargin: "-35% 0px -55% 0px" });
-
-    sections.forEach(section => observer.observe(section));
-
-    applyState("normal");
-    animateScene(false);
-  </script>
-</body>
-</html>
-
+                <!-- Resistores -->
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 hover:border-slate-700 transition">
+                    <div class="w-12 h-12 rounded-xl bg-rose-950 border border-rose-800 flex items-center justify-center text-rose-4
